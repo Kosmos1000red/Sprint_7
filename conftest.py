@@ -1,41 +1,25 @@
 import pytest
-import requests
 
-import urls
-from helpers import generate_courier_payload
+from helpers import delete_courier_by_payload, generate_courier_payload
 from methods.courier_methods import CourierMethods
 
 
 @pytest.fixture
-def courier_payload():
-    return generate_courier_payload()
+def registered_courier():
+    payload = generate_courier_payload()
+    CourierMethods.create_courier(payload)
+    yield payload
+    delete_courier_by_payload(payload)
 
 
 @pytest.fixture
-def created_courier(courier_payload):
-    create_response = CourierMethods.create_courier(courier_payload)
+def courier_cleanup():
+    created = []
 
-    courier_id = None
-    login_response = CourierMethods.login_courier(courier_payload)
-    if login_response.status_code == 200:
-        courier_id = login_response.json().get("id")
+    def _register_for_cleanup(payload: dict):
+        created.append(payload)
 
-    yield courier_payload, courier_id
+    yield _register_for_cleanup
 
-    if courier_id:
-        CourierMethods.delete_courier(courier_id)
-
-
-@pytest.fixture
-def tracked_order():
-    created_tracks = []
-
-    def _create(payload: dict):
-        response = requests.post(urls.CREATE_ORDER, json=payload)
-        if response.status_code == 201:
-            created_tracks.append(response.json().get("track"))
-        return response
-
-    yield _create
-
-    created_tracks.clear()
+    for payload in created:
+        delete_courier_by_payload(payload)
