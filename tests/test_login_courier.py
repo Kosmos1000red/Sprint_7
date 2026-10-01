@@ -1,5 +1,4 @@
 import allure
-import requests
 
 from data import COURIER_LOGIN_NOT_ENOUGH_DATA, COURIER_NOT_FOUND
 from helpers import generate_courier_payload
@@ -30,14 +29,12 @@ class TestLoginCourier:
 
     @allure.title("Нельзя авторизоваться без пароля")
     def test_login_courier_without_password(self, registered_courier):
-        try:
-            response = CourierMethods.login_courier({
-                "login": registered_courier["login"],
-            })
-            assert response.status_code == 504
-        except requests.exceptions.ReadTimeout:
-            # известный баг API: без пароля запрос зависает
-            pass
+        response = CourierMethods.login_courier({
+            "login": registered_courier["login"],
+        })
+
+        assert response.status_code == 400
+        assert response.json()["message"] == COURIER_LOGIN_NOT_ENOUGH_DATA
 
     @allure.title("Ошибка при неверном логине")
     def test_login_courier_wrong_login(self, registered_courier):
